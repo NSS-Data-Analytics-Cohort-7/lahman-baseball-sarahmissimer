@@ -157,6 +157,21 @@ GROUP by position;
 
 
 -- 5. Find the average number of strikeouts per game by decade since 1920. Round the numbers you report to 2 decimal places. Do the same for home runs per game. Do you see any trends?
+-- look at teams, batting, pitching, people tables
+-- be sure to ROUND to 2 decimals
+-- find the average
+-- i need the year to be a decade, 
+
+SELECT g AS game, ROUND(AVG(so),2) AS strikeouts, ((yearid/10)*10) AS decade, teamid, yearid
+FROM teams
+WHERE ((yearid/10)*10) >= 1920
+GROUP BY game, decade, teamid, yearid
+ORDER BY yearid;
+
+-- SELECT ROUND(AVG(so)/g)
+-- FROM teams
+-- GROUP BY g
+
 
 
  
