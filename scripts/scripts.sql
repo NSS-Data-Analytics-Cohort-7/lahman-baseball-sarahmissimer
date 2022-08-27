@@ -247,7 +247,10 @@ GROUP BY name, wswin, yearid, w
 ORDER BY MIN(w) ASC;
 -- St. Louis Cardinals, 83wins
 
---pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? 
+--pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? Basically, I need to know 
+
+
+
 
 WITH CTE AS
 (
@@ -256,16 +259,18 @@ name,
 MAX(w), 
 yearid
 FROM teams
-WHERE wswin LIKE 'Y'
+WHERE wswin = 'Y'
 AND yearid BETWEEN 1970 AND 2016
 AND yearid <> 1981
 GROUP BY name, wswin, yearid, w
 ORDER BY MAX(w) DESC)
-SELECT yearid, name, wswin ---all the teams that have won the world series (45teams) 
-FROM teams
-JOIN CTE
+
+SELECT yearid, t.name,t.wswin, MAX(w) ---all the teams that have won the world series (45teams) 
+FROM teams AS t
+JOIN CTE 
 USING (yearid)
-WHERE wswin LIKE 'Y'
-AND yearid BETWEEN 1970 AND 2016
+WHERE yearid BETWEEN 1970 AND 2016
 AND yearid <>1981
+GROUP BY yearid, t.name, t.wswin
+-- ORDER BY MAX(w) DESC;
 
