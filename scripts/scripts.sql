@@ -162,16 +162,110 @@ GROUP by position;
 -- find the average
 -- i need the year to be a decade, 
 
-SELECT g AS game, ROUND(AVG(so),2) AS strikeouts, ((yearid/10)*10) AS decade, teamid, yearid
+SELECT CASE WHEN yearid BETWEEN 1920 AND 1929 THEN '1920s'
+            WHEN yearid BETWEEN 1930 AND 1939 THEN '1930S'
+            WHEN yearid BETWEEN 1940 AND 1949 THEN '1940S'
+            WHEN yearid BETWEEN 1950 AND 1959 THEN '1950S'
+            WHEN yearid BETWEEN 1960 AND 1969 THEN '1960S'
+            WHEN yearid BETWEEN 1970 AND 1979 THEN '1970S'
+            WHEN yearid BETWEEN 1980 AND 1989 THEN '1980S'
+            WHEN yearid BETWEEN 1990 AND 1999 THEN '1990S'
+            WHEN yearid BETWEEN 2000 AND 2009 THEN '2000S'
+            WHEN yearid BETWEEN 2010 AND 2019 THEN '2010S'
+                END AS decade,
+           ROUND(CAST(SUM(so) AS DECIMAL)/CAST(SUM(g/2) AS DECIMAL), 2) AS avg_strikeouts,
+           ROUND(CAST(SUM(hr) AS DECIMAL)/CAST(SUM(g/2) AS DECIMAL), 2) AS avg_homeruns
 FROM teams
-WHERE ((yearid/10)*10) >= 1920
-GROUP BY game, decade, teamid, yearid
-ORDER BY yearid;
+WHERE yearid >=1920
+GROUP BY 1
+ORDER BY 1;
+---ANSWER: 
+"1920s"	5.65	0.81
+"1930S"	6.65	1.09
+"1940S"	7.12	1.05
+"1950S"	8.82	1.69
+"1960S"	11.45	1.64
+"1970S"	10.31	1.49
+"1980S"	10.75	1.62
+"1990S"	12.31	1.92
+"2000S"	13.13	2.15
+"2010S"	15.05	1.97
 
--- SELECT ROUND(AVG(so)/g)
--- FROM teams
--- GROUP BY g
+-- 6. Find the player who had the most success stealing bases in 2016, where success is measured as the percentage of stolen base attempts which are successful. (A stolen base attempt results either in a stolen base or being caught stealing.) Consider only players who attempted at least 20 stolen bases.
+--SB stolen base--- how many times they have successfully stolen
+--CS caught stealing + stolen base (total attempts)
+--stolen bases/stolen bases + caught stealing 
+--can use the batting table and the player id
 
 
+SELECT p.namefirst, p.namelast, b.sb/b.cs AS total_attempts
+FROM batting AS b
+JOIN people AS p
+USING (playerid)
+WHERE yearid = '2016' and sb>=20
+GROUP BY p.namefirst, p.namelast, b.sb, b.cs
+ORDER BY total_attempts DESC;
+---ANSWER: CHRIS OWINGS
 
- 
+-- From 1970 – 2016, what is the largest number of wins for a team that did not win the world series? What is the smallest number of wins for a team that did win the world series? Doing this will probably result in an unusually small number of wins for a world series champion – determine why this is the case. Then redo your query, excluding the problem year. How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
+---there are 47 teams
+
+---pt1 largest number of wins for a team that did not win the world series
+SELECT wswin,
+name,
+MAX(w), 
+yearid
+FROM teams
+WHERE wswin LIKE 'N'
+AND yearid BETWEEN 1970 AND 2016
+GROUP BY name, wswin, yearid, w
+ORDER BY MAX(w) DESC;
+---pt1: Seattle Mariners, 116wins
+
+--pt2 smallest number of wins for a team that did win the world series
+SELECT wswin,
+name,
+MIN(w),
+yearid
+FROM teams
+WHERE wswin LIKE 'Y'
+AND yearid BETWEEN 1970 AND 2016
+GROUP BY name, wswin, yearid, w
+ORDER BY MIN(w) ASC;
+--pt2: Los Angeles Dodgers, 63wins
+
+--query redo: 
+SELECT wswin,
+name,
+MIN(w),
+yearid
+FROM teams
+WHERE wswin LIKE 'Y'
+AND yearid BETWEEN 1970 AND 2016
+AND yearid <> 1981
+GROUP BY name, wswin, yearid, w
+ORDER BY MIN(w) ASC;
+-- St. Louis Cardinals, 83wins
+
+--pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? 
+
+WITH CTE AS
+(
+    SELECT wswin, --this tells me which teams won the world series, year and the most games
+name,
+MAX(w), 
+yearid
+FROM teams
+WHERE wswin LIKE 'Y'
+AND yearid BETWEEN 1970 AND 2016
+AND yearid <> 1981
+GROUP BY name, wswin, yearid, w
+ORDER BY MAX(w) DESC)
+SELECT yearid, name, wswin ---all the teams that have won the world series (45teams) 
+FROM teams
+JOIN CTE
+USING (yearid)
+WHERE wswin LIKE 'Y'
+AND yearid BETWEEN 1970 AND 2016
+AND yearid <>1981
+
