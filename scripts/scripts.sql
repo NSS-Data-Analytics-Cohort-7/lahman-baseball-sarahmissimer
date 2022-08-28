@@ -207,7 +207,7 @@ GROUP BY p.namefirst, p.namelast, b.sb, b.cs
 ORDER BY total_attempts DESC;
 ---ANSWER: CHRIS OWINGS
 
--- From 1970 – 2016, what is the largest number of wins for a team that did not win the world series? What is the smallest number of wins for a team that did win the world series? Doing this will probably result in an unusually small number of wins for a world series champion – determine why this is the case. Then redo your query, excluding the problem year. How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
+--7. From 1970 – 2016, what is the largest number of wins for a team that did not win the world series? What is the smallest number of wins for a team that did win the world series? Doing this will probably result in an unusually small number of wins for a world series champion – determine why this is the case. Then redo your query, excluding the problem year. How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? What percentage of the time?
 ---there are 47 teams
 
 ---pt1 largest number of wins for a team that did not win the world series
@@ -274,3 +274,172 @@ AND yearid <>1981
 GROUP BY yearid, t.name, t.wswin
 -- ORDER BY MAX(w) DESC;
 
+
+
+-- 9.Which managers have won the TSN Manager of the Year award in both the National League (NL) and the American League (AL)? Give their full name and the teams that they were managing when they won the award.
+--managers that have won TSN Manager of the year in both leagues
+--need their full anme and team they were managing
+-- teams, awardsmanager
+SELECT *
+FROM teams
+
+SELECT DISTINCT /*playerid AS managers*/ people.namefirst, people.namelast, teams.name ---managers that won the award in each league
+FROM awardsmanagers
+JOIN people
+USING (playerid)
+JOIN teams
+USING (lgid)
+WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')
+
+----working query 
+SELECT DISTINCT name AS team_name, managers.namefirst, managers.namelast  --this is the teams the managers were managing when they won
+FROM (
+    SELECT playerid AS managers, lgid, p.namefirst, p.namelast ---managers that won the award in each league
+    FROM awardsmanagers
+    JOIN people AS p
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')) AS managers
+JOIN teams 
+USING (lgid)
+
+---trying to make playerid work
+-- SELECT DISTINCT name AS namefirst, namelast  --this is the teams the managers were managing when they won
+-- FROM (
+--     SELECT playerid AS managers, lgid ---managers that won the award in each league
+--     FROM awardsmanagers
+--     WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')) AS managers
+-- JOIN people 
+-- USING (playerid)
+
+
+SELECT DISTINCT namefirst, namelast, a.awardid, a.lgid, t.name ---this is the managers namea.
+FROM people
+JOIN awardsmanagers AS a
+USING (playerid)
+JOIN teams AS t
+USING (yearid)
+WHERE a.awardid = 'TSN Manager of the Year' AND a.lgid IN ('AL', 'NL')
+GROUP BY namefirst, namelast, a.awardid, a.yearid, a.lgid, t.name
+-- ORDER BY a.yearid
+
+
+
+----cte time
+WITH CTE_managerteam AS
+(SELECT namefirst, namelast, awardid ---this is the managers name
+FROM people
+JOIN awardsmanagers
+USING (playerid)
+WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL'))
+SELECT CTE_managerteam, name AS team_name  --this is the teams the managers were managing when they won
+FROM ---managers ---
+    (SELECT playerid AS managers, lgid ---managers that won the award in each league
+    FROM awardsmanagers
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')) AS managers
+JOIN teams 
+USING (lgid);
+
+
+
+
+SELECT DISTINCT name AS team_name,
+    (SELECT namefirst, namelast, awardid ---this is the managers name
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL')) AS manager_name--this is the     teams the managers were managing when they won
+FROM 
+    (SELECT playerid AS managers, lgid ---managers that won the award in each league
+    FROM awardsmanagers
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')) AS managers
+JOIN teams 
+USING (lgid);
+
+
+---- 60 managers who won award and coach in league
+SELECT namefirst, namelast
+FROM people
+JOIN awardsmanagers
+USING (playerid)
+WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')
+
+SELECT t.name, t.lgid, t.yearid, awardid
+FROM teams AS t
+LEFT JOIN awardsmanagers 
+USING (lgid)
+WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL' , 'NL')
+
+
+--managers name, award, year, league ---using people and awardstable 
+SELECT namefirst, namelast, awardid, yearid, lgid 
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL')
+    
+    
+SELECT p.namefirst, p.namelast, m.teamid
+ FROM people AS p
+ JOIN managers AS m
+ USING (teamid)
+--  JOIN awardsmanagers AS a
+--  USING(playerid) 
+ WHERE p.namefirst LIKE '%Hal%' AND p.namelast LIKE '%Lanier%'
+--  GROUP BY t.name, p.namefirst, p.namelast, a.awardid
+
+SELECT p.namefirst, p.namelast, m.teamid
+FROM people AS p
+JOIN salaries AS s
+USING  (playerid)
+JOIN managers AS m
+USING (teamid)
+WHERE p.namefirst LIKE '%Hal%' AND p.namelast LIKE '%Lanier%'
+-- GROUP BY m.teamid, p.namefirst, p.namelast
+
+--this is every manager name and team they managed 
+SELECT
+playerid, 
+name
+FROM managers
+JOIN teams
+USING (teamid)
+-- WHERE name = 'Houston Astros'
+GROUP BY playerid, name;
+
+--managers name, award, year, league ---using people and awardstable 
+SELECT namefirst, namelast, awardid, yearid, lgid 
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL')
+ 
+ 
+ 
+ 
+ WITH deargod AS (
+ SELECT
+playerid, 
+name
+FROM managers
+JOIN teams
+USING (teamid)
+-- WHERE name = 'Houston Astros'
+GROUP BY playerid, name)
+SELECT namefirst, namelast, awardid, yearid, lgid, deargod.name 
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    JOIN deargod
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL') 
+    GROUP BY namefirst, namelast, awardid, yearid, lgid, deargod.name
+    ORDER BY yearid ASC;
+--     JOIN deargod
+--     USING (playerid)
+    
+    
+-- SELECT t.name, a.playerid
+-- FROM teams AS t
+-- JOIN awardsmanagers AS a
+-- USING (yearid)
+-- WHERE awardid = 'TSN Manager of the Year' AND t.lgid IN ('AL' , 'NL')
