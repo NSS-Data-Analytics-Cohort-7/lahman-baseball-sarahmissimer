@@ -423,7 +423,6 @@ name
 FROM managers
 JOIN teams
 USING (teamid)
--- WHERE name = 'Houston Astros'
 GROUP BY playerid, name)
 SELECT namefirst, namelast, awardid, yearid, lgid, deargod.name 
     FROM people
@@ -436,6 +435,141 @@ SELECT namefirst, namelast, awardid, yearid, lgid, deargod.name
     ORDER BY yearid ASC;
 --     JOIN deargod
 --     USING (playerid)
+
+--3436 rows
+SELECT *
+FROM managers
+
+--2835 rows
+SELECT *
+FROM teams
+
+--30 active franchises 
+SELECT *
+FROM teamsfranchises
+WHERE active = 'Y'
+
+---90 unactive or n/a
+SELECT *
+from teamsfranchises
+WHERE active IN ('N', 'NA')
+
+----Team IDs and their names (183)
+SELECT t.teamid, t.name
+FROM managers AS m
+JOIN teams AS t
+USING (teamid)
+GROUP BY t.teamid, t.name
+
+--teams, their name linked to franchise (183)
+SELECT t.teamid, t.name
+FROM managers AS m
+JOIN teams AS t
+USING (teamid)
+JOIN teamsfranchises
+USING(franchid)
+GROUP BY t.teamid, t.name
+
+---filter to only active teams (81 teams that are 'active') ISSUE: it's giving me 81 teams... and not the 30 active franchises... 
+SELECT t.teamid, t.name, tf.active
+FROM managers AS m
+JOIN teams AS t
+USING (teamid)
+JOIN teamsfranchises AS tf
+USING(franchid)
+WHERE active = 'Y'
+GROUP BY t.teamid, t.name, tf.active
+    
+---making a table that has the active franchises to join to
+WITH active_franchises AS (
+SELECT *
+FROM teamsfranchises
+WHERE active = 'Y')
+SELECT t.teamid, t.name, franchname, active
+FROM managers AS m
+JOIN teams AS t
+USING (teamid)
+JOIN active_franchises 
+USING(franchid)
+WHERE active = 'Y'
+GROUP BY t.teamid, t.name, franchname, active
+
+
+---active 'teams/franchises' (30) --- and i have to join on teams b/c the franchise table is floating 
+WITH active_franchises AS (
+SELECT *
+FROM teamsfranchises
+WHERE active = 'Y')---end of the CTE
+SELECT franchname
+FROM teams 
+JOIN active_franchises
+USING (franchid)
+GROUP BY franchname
+
+
+---should be able to use the cte with franchises to filter is the team is active 
+WITH deargod AS (
+ SELECT
+playerid, 
+franchname
+FROM managers
+LEFT JOIN teams
+USING (teamid) ---the playerid, the franchise name
+JOIN teamsfranchises
+USING (franchid) --this is joining the franchise table to teams
+WHERE active = 'Y' --actie means franchise active
+GROUP BY playerid, franchname)
+SELECT namefirst, namelast, yearid, lgid, franchname, playerid, awardid
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    JOIN deargod
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL') 
+    GROUP BY namefirst, namelast, yearid, lgid, franchname, playerid, awardid
+    ORDER BY yearid ASC;
+    
+ --this is giving me the 60 coaches (filtered to see just one) who won the award, the year and the league
+ 
+ SELECT namefirst, namelast, awardid, yearid, lgid
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    WHERE awardid = 'TSN Manager of the Year' AND  lgid IN ('AL', 'NL')
+ 
+ SELECT playerid, franchname
+ FROM managers
+ JOIN teams
+ USING (teamid)
+ JOIN teamsfranchises
+ USING (franchid)
+ WHERE playerid = 'mcnamjo99'
+ GROUP BY playerid, franchname
+ 
+ 
+ --cte 1
+ WITH CTE1 AS 
+ (SELECT playerid, franchname
+ FROM teams
+ JOIN managers
+ USING (teamid)
+ JOIN teamsfranchises
+ USING (franchid)
+ WHERE playerid = 'mcnamjo99' AND active = 'Y'
+ GROUP BY playerid, franchname),
+ --cte2
+ PEOPLE1 AS (
+SELECT namefirst, namelast, awardid, yearid, lgid, playerid
+ FROM people
+ JOIN awardsmanagers
+ USING (playerid)
+ WHERE awardid = 'TSN Manager of the Year' AND  lgid IN ('AL', 'NL'))
+ SELECT namefirst, namelast, awardid, yearid, lgid, playerid, franchname
+    FROM PEOPLE1
+    JOIN CTE1
+    USING (playerid);
+    
+    
     
     
 -- SELECT t.name, a.playerid
