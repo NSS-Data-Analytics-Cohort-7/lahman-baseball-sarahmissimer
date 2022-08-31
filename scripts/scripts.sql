@@ -232,7 +232,7 @@ WHERE wswin LIKE 'Y'
 AND yearid BETWEEN 1970 AND 2016
 GROUP BY name, wswin, yearid, w
 ORDER BY MIN(w) ASC;
---pt2: Los Angeles Dodgers, 63wins
+--pt2: Los Angeles Dodgers, 63wins (1981)
 
 --query redo: 
 SELECT wswin,
@@ -248,8 +248,6 @@ ORDER BY MIN(w) ASC;
 -- St. Louis Cardinals, 83wins
 
 --pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? Basically, I need to know 
-
-
 
 
 WITH CTE AS
@@ -273,6 +271,9 @@ WHERE yearid BETWEEN 1970 AND 2016
 AND yearid <>1981
 GROUP BY yearid, t.name, t.wswin
 -- ORDER BY MAX(w) DESC;
+
+-- 8.Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
+
 
 
 
@@ -470,6 +471,15 @@ JOIN teamsfranchises
 USING(franchid)
 GROUP BY t.teamid, t.name
 
+---modify
+SELECT t.teamid, t.name
+FROM managers AS m
+JOIN teams AS t
+USING (teamid)
+JOIN teamsfranchises
+USING(franchid)
+GROUP BY t.teamid, t.name
+
 ---filter to only active teams (81 teams that are 'active') ISSUE: it's giving me 81 teams... and not the 30 active franchises... 
 SELECT t.teamid, t.name, tf.active
 FROM managers AS m
@@ -507,24 +517,24 @@ USING (franchid)
 GROUP BY franchname
 
 
----should be able to use the cte with franchises to filter is the team is active 
+---THE WORKING TABLE!!!!!!
 WITH deargod AS (
  SELECT
 playerid, 
-franchname
-FROM managers
-LEFT JOIN teams
-USING (teamid) ---the playerid, the franchise name
+franchname, yearid
+FROM managers 
+LEFT JOIN teams 
+USING (teamid, yearid) ---the playerid, the franchise name
 JOIN teamsfranchises
 USING (franchid) --this is joining the franchise table to teams
 WHERE active = 'Y' --actie means franchise active
-GROUP BY playerid, franchname)
+GROUP BY playerid, franchname, yearid)
 SELECT namefirst, namelast, yearid, lgid, franchname, playerid, awardid
     FROM people
     JOIN awardsmanagers
     USING (playerid)
     JOIN deargod
-    USING (playerid)
+    USING (playerid,yearid)
     WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL') 
     GROUP BY namefirst, namelast, yearid, lgid, franchname, playerid, awardid
     ORDER BY yearid ASC;
@@ -543,7 +553,7 @@ SELECT namefirst, namelast, yearid, lgid, franchname, playerid, awardid
  USING (teamid)
  JOIN teamsfranchises
  USING (franchid)
- WHERE playerid = 'mcnamjo99'
+ WHERE playerid = 'lanieha01'
  GROUP BY playerid, franchname
  
  
@@ -555,7 +565,7 @@ SELECT namefirst, namelast, yearid, lgid, franchname, playerid, awardid
  USING (teamid)
  JOIN teamsfranchises
  USING (franchid)
- WHERE playerid = 'mcnamjo99' AND active = 'Y'
+ WHERE playerid = 'lanieha01' AND active = 'Y'
  GROUP BY playerid, franchname),
  --cte2
  PEOPLE1 AS (
@@ -563,15 +573,15 @@ SELECT namefirst, namelast, awardid, yearid, lgid, playerid
  FROM people
  JOIN awardsmanagers
  USING (playerid)
- WHERE awardid = 'TSN Manager of the Year' AND  lgid IN ('AL', 'NL'))
+ WHERE awardid = 'TSN Manager of the Year' AND  lgid IN ('AL', 'NL')
  SELECT namefirst, namelast, awardid, yearid, lgid, playerid, franchname
     FROM PEOPLE1
     JOIN CTE1
     USING (playerid);
+
+SELECT 
     
-    
-    
-    
+      
 -- SELECT t.name, a.playerid
 -- FROM teams AS t
 -- JOIN awardsmanagers AS a
