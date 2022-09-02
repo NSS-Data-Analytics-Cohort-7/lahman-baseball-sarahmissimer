@@ -247,22 +247,239 @@ GROUP BY name, wswin, yearid, w
 ORDER BY MIN(w) ASC;
 -- St. Louis Cardinals, 83wins
 
---pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? Basically, I need to know 
-
-
+--pt3: How often from 1970 – 2016 was it the case that a team with the most wins also won the world series? 
 WITH CTE AS
 (
-    SELECT wswin, --this tells me which teams won the world series, year and the most games
-name,
-MAX(w), 
+SELECT  --this tells me which teams won the world series, year and the most games
+MAX(w) AS max_wins, 
 yearid
 FROM teams
-WHERE wswin = 'Y'
-AND yearid BETWEEN 1970 AND 2016
-AND yearid <> 1981
-GROUP BY name, wswin, yearid, w
-ORDER BY MAX(w) DESC)
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY yearid),
 
+ws AS(
+    SELECT w, teamid, yearid, wswin
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016 AND wswin ='Y'
+    ORDER BY w DESC, yearid
+)
+
+SELECT CAST(COUNT(ws.teamid) AS NUMERIC)/(CAST(2016-1970 AS NUMERIC))
+FROM CTE
+INNER JOIN ws
+ON ws.yearid=cte.yearid AND ws.w=cte.max_wins
+---ANSWER: 25%
+
+---most wins per year (46)
+SELECT
+MAX(w), yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+AND yearid <> '1994'
+GROUP BY yearid
+ORDER BY yearid DESC;
+
+---CTE linking most wins and world series (FINAL) -- this is giving us the name of the team that won the world series and how many wins they had the year they won the world series -- we still need to figure out how to get the most wins the team has ever had... 
+WITH max_wins AS(
+    SELECT
+    MAX(w), yearid
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    AND yearid <> '1994'    
+    GROUP BY yearid
+    ORDER BY yearid DESC)
+SELECT
+name, MAX(w)
+FROM teams
+JOIN max_wins 
+USING (yearid)
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' 
+GROUP BY name
+ORDER BY MAX(w)
+
+---trying removing the yearid in the CTE b/c I don't care what year the max wins are, I just want the team's max wins total 
+WITH max_wins AS(
+    SELECT
+    MAX(w) AS max_wins_ever, name
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    GROUP BY name)
+SELECT
+max_wins_ever,
+w AS wins_worldseries, 
+t.name
+FROM teams AS t
+JOIN max_wins 
+USING (name)
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' AND max_wins_ever = w
+
+-- record when they won the world series
+WITH max_wins AS(
+    SELECT
+    MAX(w) AS max_wins_ever, name
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    GROUP BY name)
+SELECT
+w AS wins_worldseries, 
+t.name
+FROM teams AS t
+JOIN max_wins 
+USING (name)
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' 
+---record when they won the world series AND the best record of the season
+WITH best_record AS(
+    SELECT
+    MAX(w) AS best_record_ever, name
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    GROUP BY name)
+SELECT
+yearid,
+best_record_ever,
+w AS wins_worldseries, 
+t.name
+FROM teams AS t
+JOIN best_record
+USING (name)
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' 
+
+---just need best record and if they won the world series 
+WITH best_record AS(
+    SELECT
+    MAX(w) AS best_record_ever, name
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    GROUP BY name)
+SELECT
+yearid,
+best_record_ever,
+t.name
+FROM teams AS t
+JOIN best_record
+USING (name)
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' 
+---trying to find name
+SELECT
+    MAX(w), yearid
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016
+    AND yearid <> '1994'    
+    GROUP BY yearid
+    ORDER BY yearid DESC
+
+--testing a name 
+WITH max_wins AS(
+SELECT
+MAX(w), yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+AND yearid <> '1994'    
+GROUP BY yearid
+ORDER BY yearid DESC)
+SELECT
+name, MAX(w)
+FROM teams
+JOIN max_wins
+USING (yearid)
+WHERE yearid BETWEEN 1970 AND 2016
+AND wswin = 'Y' AND name = 'Atlanta Braves'
+GROUP BY name
+ORDER BY MAX(w);
+
+-- checking if AB had 90 wins in 2005
+SELECT
+MAX(w), yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+AND yearid <> '1994' AND yearid ='2005' AND name = 'Atlanta Braves'
+GROUP BY yearid
+ORDER BY yearid DESC;
+
+---world series winners
+SELECT
+name
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016 
+AND wswin = 'Y' AND yearid <> '1994'
+GROUP BY name, yearid
+
+
+
+
+
+SELECT name, w, yearid
+FROM teams
+WHERE name = 'Seattle Mariners' AND yearid = '2001'
+
+SELECT MAX(w), --telling me all the teams wins in 2001
+name
+FROM teams
+WHERE yearid = '2001'
+GROUP BY name
+ORDER BY MAX(w) DESC;
+
+SELECT name, w --telling me how many wins OA had in 2001
+FROM teams
+WHERE name = 'Oakland Athletics' AND yearid = '2001'
+
+
+---teams that won the world series (46 teams); 1984 did not have a world series
+SELECT
+name,
+yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+AND wswin = 'Y'
+GROUP BY name, wswin, yearid
+ORDER BY yearid DESC;
+
+
+--most likely looking for less that 46 (12 i think)
+WITH CTE AS(
+SELECT yearid, name, w
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY yearid, name, w
+ORDER BY w DESC)
+SELECT wswin,
+t.name,
+yearid
+FROM teams AS t
+JOIN CTE
+USING(yearid,w)
+WHERE yearid BETWEEN 1970 AND 2016
+AND wswin = 'Y'
+GROUP BY t.name, wswin, yearid
+ORDER BY yearid DESC;
+
+-- THE CORRECT ANSWER
+WITH CTE AS
+(
+SELECT  --this tells me which teams won the world series, year and the most games
+MAX(w) AS max_wins, 
+yearid
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016
+GROUP BY yearid),
+
+ws AS(
+    SELECT w, teamid, yearid, wswin
+    FROM teams
+    WHERE yearid BETWEEN 1970 AND 2016 AND wswin ='Y'
+    ORDER BY w DESC, yearid
+)
+
+SELECT CAST(COUNT(ws.teamid) AS NUMERIC)/(CAST(2016-1970 AS NUMERIC))
+FROM CTE
+INNER JOIN ws
+ON ws.yearid=cte.yearid AND ws.w=cte.max_wins
+                                       
 SELECT yearid, t.name,t.wswin, MAX(w) ---all the teams that have won the world series (45teams) 
 FROM teams AS t
 JOIN CTE 
@@ -274,6 +491,41 @@ GROUP BY yearid, t.name, t.wswin
 
 -- 8.Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
 
+-- SELECT COUNT(games)
+-- FROM homegames 
+---3006 games
+
+SELECT CAST(h.attendance AS NUMERIC)/CAST(h.games AS NUMERIC) AS avg_attendance, h.team, p.park_name
+FROM homegames AS h
+JOIN parks AS p
+USING (park)
+WHERE year = '2016' 
+AND h.games > 10
+GROUP BY h.team,p.park_name, h.attendance, h.games
+ORDER BY attendance
+LIMIT 5
+--- TOP 5 ANSWER
+15878.555555555556	"TBA"	"Tropicana Field"
+18784.024691358025	"OAK"	"Oakland-Alameda County Coliseum"
+19650.209876543210	"CLE"	"Progressive Field"
+21405.212500000000	"MIA"	"Marlins Park"
+21559.172839506173	"CHA"	"U.S. Cellular Field"
+
+SELECT CAST(h.attendance AS NUMERIC)/CAST(h.games AS NUMERIC) AS avg_attendance, h.team, p.park_name
+FROM homegames AS h
+JOIN parks AS p
+USING (park)
+WHERE year = '2016' 
+AND h.games > 10
+GROUP BY h.team,p.park_name, h.attendance, h.games
+ORDER BY attendance DESC
+LIMIT 5
+---BOTTOM 5 ANSWER
+45719.901234567901	"LAN"	"Dodger Stadium"
+42524.567901234568	"SLN"	"Busch Stadium III"
+41877.765432098765	"TOR"	"Rogers Centre"
+41546.370370370370	"SFN"	"AT&T Park"
+39906.419753086420	"CHN"	"Wrigley Field"
 
 
 
@@ -281,6 +533,29 @@ GROUP BY yearid, t.name, t.wswin
 --managers that have won TSN Manager of the year in both leagues
 --need their full anme and team they were managing
 -- teams, awardsmanager
+---ANSWER BELOW:
+WITH deargod AS (
+ SELECT
+playerid, 
+franchname, yearid
+FROM managers 
+LEFT JOIN teams 
+USING (teamid, yearid) ---the playerid, the franchise name
+JOIN teamsfranchises
+USING (franchid) --this is joining the franchise table to teams
+WHERE active = 'Y' --actie means franchise active
+GROUP BY playerid, franchname, yearid)
+SELECT namefirst, namelast, yearid, lgid, franchname, playerid, awardid
+    FROM people
+    JOIN awardsmanagers
+    USING (playerid)
+    JOIN deargod
+    USING (playerid,yearid)
+    WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL') 
+    GROUP BY namefirst, namelast, yearid, lgid, franchname, playerid, awardid
+    ORDER BY yearid ASC;
+
+----
 SELECT *
 FROM teams
 
@@ -415,9 +690,7 @@ SELECT namefirst, namelast, awardid, yearid, lgid
     WHERE awardid = 'TSN Manager of the Year' AND lgid IN ('AL', 'NL')
  
  
- 
- 
- WITH deargod AS (
+WITH deargod AS (
  SELECT
 playerid, 
 name
@@ -581,6 +854,49 @@ SELECT namefirst, namelast, awardid, yearid, lgid, playerid
 
 SELECT 
     
+     
+     
+-- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
+---all the teams in 2016
+ SELECT *
+ FROM teams
+ WHERE yearid = '2016';
+---all players in 2016, their debut game and their final game (with debut, finalgame casted to date)
+SELECT namefirst, namelast, CAST(debut AS date) AS debut, CAST(finalgame AS date) AS finalgame
+FROM people
+
+     
+     
+--- was hoping this would tell me the total years they played/playing in the league. it did not.   
+WITH CTE1 AS(
+SELECT namefirst, CAST(debut AS date) AS debut, CAST(finalgame AS date) AS finalgame
+FROM people)     
+SELECT cte1.debut, cte1.finalgame
+FROM people AS p
+JOIN CTE1
+USING (namefirst)
+WHERE date_part('year', age(CTE1.finalgame, CTE1.debut)) >10
+     
+---this got me my year from debut     
+SELECT substring(debut from 1 for 4)AS DEBUT, substring(finalgame from 1 for 4)AS FINALGAME
+FROM people;
+     
+     
+
+
+     
+SELECT CAST(debut AS NUMERIC)
+FROM people
+ 
+
+    
+     
+     
+     
+     
+     
+     
+     
       
 -- SELECT t.name, a.playerid
 -- FROM teams AS t
