@@ -11,6 +11,10 @@ WHERE debut IS NOT NULL
 ORDER BY debut ASC;
 ---ANSWER: 1871-2017 (2016 season)
 
+----
+SELECT MIN(yearid), MAX (yearid)
+FROM teams;
+
 ---Find the name and height of the shortest player in the database. How many games did he play in? What is the name of the team for which he played?
 SELECT p.namegiven, MIN(p.height) AS height, a.g_all, p.namelast, t.name
 FROM people AS p
@@ -268,7 +272,7 @@ SELECT CAST(COUNT(ws.teamid) AS NUMERIC)/(CAST(2016-1970 AS NUMERIC))
 FROM CTE
 INNER JOIN ws
 ON ws.yearid=cte.yearid AND ws.w=cte.max_wins
----ANSWER: 25%
+---ANSWER: 26%
 
 ---most wins per year (46)
 SELECT
@@ -493,7 +497,7 @@ GROUP BY yearid, t.name, t.wswin
 
 -- SELECT COUNT(games)
 -- FROM homegames 
----3006 games
+---3006 
 
 SELECT CAST(h.attendance AS NUMERIC)/CAST(h.games AS NUMERIC) AS avg_attendance, h.team, p.park_name
 FROM homegames AS h
@@ -852,11 +856,35 @@ SELECT namefirst, namelast, awardid, yearid, lgid, playerid
     JOIN CTE1
     USING (playerid);
 
-SELECT 
+ 
     
      
      
 -- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
+     
+WITH max_homes AS
+     (SELECT
+     playerid, 
+     MAX(hr) AS career_highest
+     FROM batting
+     GROUP BY playerid
+     ORDER BY career_highest DESC)
+SELECT
+     p.namefirst ||','|| p.namelast AS name,
+     SUM(b.hr) AS homeruns
+FROM batting AS b
+LEFT JOIN people AS p
+     ON b.playerid = p.playerid
+JOIN max_homes AS m
+     ON b.playerid = m.playerid
+WHERE b.hr >=1
+     AND yearid = 2016
+     AND debut :: DATE <= '2006-12-31'
+     AND b.hr =m.career_highest
+GROUP BY name
+ORDER BY homeruns DESC;
+     
+ 
 ---all the teams in 2016
  SELECT *
  FROM teams
@@ -865,8 +893,35 @@ SELECT
 SELECT namefirst, namelast, CAST(debut AS date) AS debut, CAST(finalgame AS date) AS finalgame
 FROM people
 
+---how long they've played --keep getting told column isn't there
+WITH years_played AS(SELECT namefirst,
+                     substring(debut from 1 for 4)AS DEBUT, substring(finalgame from 1 for 4)AS FINALGAME
+                     FROM people)
+     SELECT p.namefirst, 
+     p.namelast, 
+     COUNT(CAST(years_played.FINALGAME AS numeric)- CAST(years_played.DEBUT AS numeric))AS y
+     FROM people AS p
+     LEFT JOIN years_played
+     USING (debut, namefirst)
+     WHERE y IS NOT null
+
+--finding the amount of hrs in 2016 
+SELECT hr
+FROM teams
+WHERE yearid = '2016'
      
+---joining people to appearances to teams
+SELECT namefirst, namelast, hr, yearid
+FROM people
+JOIN appearances
+USING (playerid)
+JOIN teams
+USING (yearid)
+WHERE yearid = '2016'
+GROUP BY namefirst, namelast, hr, yearid
      
+
+    
 --- was hoping this would tell me the total years they played/playing in the league. it did not.   
 WITH CTE1 AS(
 SELECT namefirst, CAST(debut AS date) AS debut, CAST(finalgame AS date) AS finalgame
@@ -877,16 +932,14 @@ JOIN CTE1
 USING (namefirst)
 WHERE date_part('year', age(CTE1.finalgame, CTE1.debut)) >10
      
----this got me my year from debut     
+---this got me my year from debut, finalgame     
 SELECT substring(debut from 1 for 4)AS DEBUT, substring(finalgame from 1 for 4)AS FINALGAME
 FROM people;
      
      
 
 
-     
-SELECT CAST(debut AS NUMERIC)
-FROM people
+ 
  
 
     
